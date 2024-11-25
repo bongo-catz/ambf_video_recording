@@ -44,7 +44,7 @@
 #include <boost/program_options.hpp>
 
 using namespace std;
-
+namespace fs = std::filesystem;
 
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
@@ -58,6 +58,32 @@ string g_current_filepath;
 afSimulatorVideoRecorderPlugin::afSimulatorVideoRecorderPlugin()
 {
 
+}
+
+//------------------------------------------------------------------------------
+// Function to create a new subdirectory inside "Simulator_Recordings" directory
+//------------------------------------------------------------------------------
+string createNewDirectory(const string& baseDir) {
+    // Create the overarching "Simulator_Recordings" directory if it does not exist
+    string baseDirectory = "Simulator_Recordings";
+    if (!fs::exists(baseDirectory)) {
+        if (!fs::create_directory(baseDirectory)) {
+            cerr << "Failed to create base directory: " << baseDirectory << endl;
+            throw runtime_error("Base directory creation failed");
+        }
+    }
+    // Get current time for a unique directory name
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&time_t_now), "%Y%m%d_%H%M%S");
+    string newDir = baseDirectory + "/" + ss.str();
+    // Create the directory inside the base directory
+    if (!fs::create_directories(newDir)) {
+        cerr << "Failed to create directory: " << newDir << endl;
+        throw runtime_error("Directory creation failed");
+    }
+    return newDir;
 }
 
 int afSimulatorVideoRecorderPlugin::init(int argc, char **argv, const afWorldPtr a_afWorld)
@@ -77,11 +103,14 @@ int afSimulatorVideoRecorderPlugin::init(int argc, char **argv, const afWorldPtr
 
     m_image = cImage::create();
 
+    // Create a new directory to save the video under Simulator_Recordings
+    string saveDirectory = createNewDirectory("Simulator_Recordings");
+
     // ffmpeg settings, these can be changed to balance speed, size and quality
     time_t now = time(0);
     char* dt = ctime(&now);
     string size_str = to_string(m_width) + "x" + to_string(m_height);
-    m_video_filename = " " + m_camera->getName() + "_" + to_string(int(m_worldPtr->getSystemTime())) + ".mp4";
+    m_video_filename = saveDirectory + "/" + m_camera->getName() + "_" + to_string(int(m_worldPtr->getSystemTime())) + ".mp4";
     string cmd = "ffmpeg";
     cmd += " -r 60";
     cmd += " -f rawvideo";
