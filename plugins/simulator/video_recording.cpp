@@ -128,7 +128,7 @@ int afSimulatorVideoRecorderPlugin::init(int argc, char **argv, const afWorldPtr
     cmd += " -pix_fmt yuv420p";
     cmd += " -crf 21"; // Major parameter to tweak video compression and output size
     cmd += " -vf vflip";
-    cmd += m_video_filename;
+    cmd += " " + m_video_filename;
 
     try{
         m_ffmpeg = popen(cmd.c_str(), "w");
